@@ -15,9 +15,11 @@ variable "github_repo_name" {
   type        = string
 }
 
-# Combine GitHub account and repository into a single variable
+# Combine GitHub account and repository using the format() function
 variable "github_repo" {
   description = "GitHub repository in the format 'account/repo'."
   type        = string
-  default     = "${var.github_account}/${var.github_repo_name}"
+  default     = format("%s/%s", var.github_account, var.github_repo_name)
 }
+
+#default     = var.github_account .. "/" .. var.github_repo_name
