@@ -57,11 +57,8 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   }
 }
 
-resource "google_iam_policy" "github_sa_policy" {
-  binding {
-    role    = "roles/iam.workloadIdentityUser"
-    members = [
-      "serviceAccount:${var.project_id}.svc.id.goog:${var.github_repository}"  # Replace with your GitHub actions repository
-    ]
-  }
+resource "google_project_iam_member" "github_workload_identity_user" {
+  project = var.project_id
+  role    = "roles/iam.workloadIdentityUser"
+  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
 }
