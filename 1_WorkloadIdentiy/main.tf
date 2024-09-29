@@ -1,64 +1,57 @@
-provider "google" {
+# main.tf
+
+# Enable necessary Google APIs
+resource "google_project_service" "iam" {
   project = var.project_id
-  region  = "us-central1"  # Change as needed
+  service = "iam.googleapis.com"
 }
 
-resource "google_service_account" "gcp_sa" {
-  account_id   = var.service_account_name
-  display_name = "GCP Service Account for GitHub Actions"
-}
-
-resource "google_project_iam_member" "build_permissions" {
+resource "google_project_service" "iamcredentials" {
   project = var.project_id
-  role    = "roles/cloudbuild.builds.editor"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
+  service = "iamcredentials.googleapis.com"
 }
 
-resource "google_project_iam_member" "artifact_registry_permissions" {
+resource "google_project_service" "sts" {
   project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
+  service = "sts.googleapis.com"
 }
 
-resource "google_project_iam_member" "cloud_run_permissions" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
+# Create Google Cloud Service Account
+resource "google_service_account" "github_runner" {
+  account_id   = "github-runner-sa"
+  display_name = "GitHub Runner Service Account"
+  project      = var.project_id
 }
 
-resource "google_project_iam_member" "cloud_function_permissions" {
-  project = var.project_id
-  role    = "roles/cloudfunctions.admin"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
+# Create Workload Identity Pool
+resource "google_iam_workload_identity_pool" "github_pool" {
+  provider_id   = "github-pool"
+  display_name  = "GitHub Pool"
+  project       = var.project_id
+  workload_identity_pool_id = "github-pool"
 }
 
-resource "google_project_iam_member" "gke_permissions" {
-  project = var.project_id
-  role    = "roles/container.admin"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
-}
-
-resource "google_iam_workload_identity_pool" "github_actions_pool" {
-  workload_identity_pool_id = "${var.service_account_name}-pool"
-  display_name              = "GitHub Actions Workload Identity Pool"
-  description               = "Workload Identity Pool for GitHub Actions"
-}
-
+# Create Workload Identity Provider
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
-  workload_identity_pool_id = google_iam_workload_identity_pool.github_actions_pool.workload_identity_pool_id
-  provider_id               = "github-actions"
-  display_name              = "GitHub Actions Provider"
-  attribute_mapping = {
-    "google.subject" = "assertion.sub"
-  }
-  
+  provider_id             = "github-provider"
+  workload_identity_pool_id = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  display_name            = "GitHub Provider"
+  project                 = var.project_id
+
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
+
+  attribute_mapping = {
+    "google.subject"          = "assertion.sub"
+    "attribute.actor"         = "assertion.actor"
+    "attribute.repository"    = "assertion.repository"
+  }
 }
 
-resource "google_project_iam_member" "github_workload_identity_user" {
-  project = var.project_id
-  role    = "roles/iam.workloadIdentityUser"
-  member  = "serviceAccount:${google_service_account.gcp_sa.email}"
+# Bind GitHub repository to Service Account via Workload Identity
+resource "google_service_account_iam_member" "sa_binding" {
+  service_account_id = google_service_account.github_runner.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/projects/${var.project_id}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.github_pool.workload_identity_pool_id}/attribute.repository/${var.github_repo}"
 }
