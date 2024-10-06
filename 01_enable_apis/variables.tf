@@ -11,7 +11,6 @@ variable "region_name" {
 }
 
 variable "member_id" {
-  type        = string
   description = "The account to which the role will be assigned"
   type = string
 
