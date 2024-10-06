@@ -8,6 +8,6 @@ resource "google_compute_network" "myvpc" {
 resource "google_compute_subnetwork" "mysubnet" {
     name = "subnet1"
     region = var.region_name
-    ip_cdir_range = "10.128.0.0/20"
+    ip_cidr_range = "10.128.0.0/20"
     network = google_compute_network.myvpc.id // GET VPC ID
 }
