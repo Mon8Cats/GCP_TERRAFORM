@@ -33,3 +33,6 @@ public class HelloWorld
         Console.WriteLIne("Hello, World");
     }
 }
+
+
+Unfortunately, the Cloud Resource Manager API cannot be enabled by Terraform if it is not already enabled in your project. Terraform requires the Cloud Resource Manager API to manage project-level resources, including enabling APIs like Artifact Registry.
