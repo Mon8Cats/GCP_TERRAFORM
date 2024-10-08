@@ -1,13 +1,14 @@
 # Resource: VPC
 resource "google_compute_network" "myvpc" {
-    name = "vpc1"
+    name = "${local.name}-vpc"
     auto_create_subnetworks = false
 }
 
 # Resource: Subnet 
 resource "google_compute_subnetwork" "mysubnet" {
-    name = "subnet1"
-    region = var.region_name
+    name = "${var.gcp_region1}-subnet"
+    region = var.gcp_region1
     ip_cidr_range = "10.128.0.0/20"
-    network = google_compute_network.myvpc.id // GET VPC ID
+    network = google_compute_network.myvpc.id
+    private_ip_google_access = true
 }

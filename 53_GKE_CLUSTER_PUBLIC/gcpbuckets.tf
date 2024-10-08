@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "my_bucket" {
-  name          = "terraform-on-gcp-gke"
+  name          = "terraform-mon8cats"
   location      = "US"
   storage_class = "STANDARD"
 
